@@ -32,6 +32,13 @@ function setup() {
     frameRate(60);
     background(51);
     textFont('Courier New');
+
+    //create link back to gleneder.com
+    let link = document.createElement("a");
+    let text = document.createTextNode("www.gleneder.com");
+    link.appendChild(text);
+    link.href = "https://www.gleneder.com/#";
+    document.body.appendChild(link);
 }
 
 function draw() {
