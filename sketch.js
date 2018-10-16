@@ -3,11 +3,9 @@ let canvasHeight = 500;
 
 
 let player = new Player();
-let enimes = [];
-enimes[0] = new Enemy(100, 100, "red", 90);
-enimes[1] = new Enemy(canvasWidth / 2, 20, "green", 60);
-enimes[2] = new Enemy(canvasWidth - 40, canvasHeight - 60, "blue", 30);
+let score = 0;
 
+//create goals
 let goalSize = 30;
 let goalOnePosition = new Position((canvasWidth / 3) - (goalSize / 2), (canvasHeight / 3) - (goalSize / 2));
 let goalTwoPosition = new Position(((canvasWidth * 2) / 3) - (goalSize / 2), (canvasHeight / 3) - (goalSize / 2));
@@ -17,6 +15,11 @@ let goalFourPosition = new Position((canvasWidth / 3) - (goalSize / 2), ((canvas
 let redGoal = new Goal(goalOnePosition, goalTwoPosition, 1, goalSize, "red");
 let greenGoal = new Goal(goalTwoPosition, goalThreePosition, 2, goalSize, "green");
 let blueGoal = new Goal(goalThreePosition, goalFourPosition, 3, goalSize, "blue");
+
+//create enimes
+redEnemy = new Enemy(goalOnePosition.x + 10, goalOnePosition.y + 10, "red", 90);
+greenEnemy = new Enemy(goalThreePosition.x + 10, goalThreePosition.y + 10, "green", 60);
+blueEnemy = new Enemy(canvasWidth - 40, canvasHeight - 60, "blue", 30);
 
 
 function setup() {
@@ -32,26 +35,26 @@ function draw() {
 
     //update logic
     player.update();
-    for(i = 0; i < enimes.length; i++) {
-        enimes[i].update();
-    }
-    redGoal.update();
-    greenGoal.update();
-    blueGoal.update();
+    //redEnemy.update();
+    //greenEnemy.update();
+    //blueEnemy.update();
+    redGoal.update(redEnemy);
+    greenGoal.update(greenEnemy);
+    blueGoal.update(blueEnemy);
 
 
     //update graphics
+    stroke(255);
+    textSize(24);
+    fill(255);
+    text("Score: " + score, 20, 40);
     redGoal.render();
     blueGoal.render();
     greenGoal.render();
     player.render();
-    for(i = 0; i < enimes.length; i++) {
-        enimes[i].render();
-    }
-
-
-    console.log(redGoal.x);
-    
+    redEnemy.render();
+    greenEnemy.render();
+    blueEnemy.render();
 
 }
 
@@ -63,8 +66,8 @@ function draw() {
 *@param adjustTime -- time in 1/60 of seconds for adjustments to be made
 */
 function Enemy(x, y, color, adjustTime) {
-    this.x = x;
-    this.y = y;
+    this.x = Math.floor(x);
+    this.y = Math.floor(y);
     this.xSpeed = 0;
     this.ySpeed = 0;
     this.maxSpeed = 2;
@@ -74,7 +77,8 @@ function Enemy(x, y, color, adjustTime) {
     this.counter = new Counter();
     this.adjustTimer = adjustTime;
 
-    this.update = function() {
+
+    this.update = function(goal) {
     
         //adjust for player after set ammount of time
         if(this.counter.isCountAt(this.adjustTimer)) {
@@ -203,11 +207,14 @@ function Goal(position, positionToGoTo, goalStop, size, color) {
     this.goalStop = goalStop;
     this.size = size;
     this.color = color;
+    this.enemyHasEntered = false;
+    this.explosion = new Explosion(new Position(0, 0), this.size, this.color);
+    this.explosion.canRender = false;
 
 
-    this.update = function() {
-        console.log("Current Pos: " + this.x + " " + this.y + ", Going to: " + this.nextPosition.x + " " + this.nextPosition.y);
-        if(Math.floor(this.x) === Math.floor(this.nextPosition.x) && Math.floor(this.y) === Math.floor(this.nextPosition.y)) {
+    this.update = function(enemy) {
+
+        if(this.x === this.nextPosition.x && this.y === this.nextPosition.y) {
             //set new nextPosition
             if(this.goalStop === 0) {
                 this.nextPosition = goalTwoPosition;
@@ -238,19 +245,35 @@ function Goal(position, positionToGoTo, goalStop, size, color) {
         }else if(this.y > this.nextPosition.y) {
             this.y--;
         }
+        
+        if(this.isInsideGoal(enemy.x, enemy.y, enemy.radius)) {
+            if(this.enemyHasEntered === false) {
+                score++;
+                this.enemyHasEntered = true;
+                this.explosion = new Explosion(new Position(enemy.x, enemy.y), enemy.radius);
+            }
+        }else {
+            this.enemyHasEntered = false;
+        }
+
+        //update explosion
+        this.explosion.update();
+        
 
     }
+
 
 
     /*
     *@param x -- x value of point to check
     *@parma y -- y value of point to check
+    *@param radius -- radius of enemy to add buffer for
     */
-    this.isInsideGoal = function(x, y) {
+    this.isInsideGoal = function(x, y, radius) {
         //check inside x values
-        if(x >= this.x && x <= this.x + this.width) {
+        if(x > (this.x - radius) && x < (this.x + this.size + radius)) {
             //check inside y values
-            if(y >= this.y && y <= this.y + this.height) {
+            if(y > this.y - radius && y < this.y + this.size + radius) {
                 //is inside goal
                 return true;
             }
@@ -269,8 +292,41 @@ function Goal(position, positionToGoTo, goalStop, size, color) {
     this.render = function() {
         fill(color);
         rect(this.x, this.y, this.size, this.size);
+
+        //render explosion if can
+        if(this.explosion.canRender) {
+            this.explosion.render();
+        }
     }
 
+}
+
+function Explosion(position, radius) {
+    this.position = position;
+    this.expandRate = 2;
+    this.alphaDecay = 8;
+    this.radius = radius;
+    this.expandTime = 40;
+    this.timer = new Counter();
+    this.canRender = true;
+    this.alpha = 255;
+
+    this.update = function() {
+        this.radius += this.expandRate;
+        this.alpha -= this.alphaDecay;
+        this.timer.update();
+        if(this.timer.isCountAt(this.expandTime)) {
+            this.canRender = false;
+        }
+    }
+
+    this.render = function() {
+        noFill();
+        ellipseMode(RADIUS);
+        stroke(color(255,255,255, this.alpha));
+        ellipse(this.position.x, this.position.y, this.radius);
+        stroke(color(255,255,255, 255));
+    }
 }
 
 
@@ -294,6 +350,6 @@ function Counter() {
 
 //position object which is almost a vector but I dont want to look up the Vector class for p5
 function Position(x, y) {
-    this.x = x;
-    this.y = y;
+    this.x = Math.floor(x);
+    this.y = Math.floor(y);
 }
