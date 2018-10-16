@@ -17,7 +17,7 @@ let greenGoal = new Goal(goalTwoPosition, goalThreePosition, 2, goalSize, "green
 let blueGoal = new Goal(goalThreePosition, goalFourPosition, 3, goalSize, "blue");
 
 //create enimes
-redEnemy = new Enemy(goalOnePosition.x + 10, goalOnePosition.y + 10, "red", 90);
+redEnemy = new Enemy(100, 100, "red", 90);
 greenEnemy = new Enemy(goalThreePosition.x + 10, goalThreePosition.y + 10, "green", 60);
 blueEnemy = new Enemy(canvasWidth - 40, canvasHeight - 60, "blue", 30);
 
@@ -35,9 +35,9 @@ function draw() {
 
     //update logic
     player.update();
-    //redEnemy.update();
-    //greenEnemy.update();
-    //blueEnemy.update();
+    redEnemy.update();
+    greenEnemy.update();
+    blueEnemy.update();
     redGoal.update(redEnemy);
     greenGoal.update(greenEnemy);
     blueGoal.update(blueEnemy);
