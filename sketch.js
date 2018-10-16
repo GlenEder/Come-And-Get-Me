@@ -206,21 +206,24 @@ function Goal(position, positionToGoTo, goalStop, size, color) {
 
 
     this.update = function() {
-        if(this.x == this.nextPosition.x && this.y == this.nextPosition.y) {
+        console.log("Current Pos: " + this.x + " " + this.y + ", Going to: " + this.nextPosition.x + " " + this.nextPosition.y);
+        if(Math.floor(this.x) === Math.floor(this.nextPosition.x) && Math.floor(this.y) === Math.floor(this.nextPosition.y)) {
             //set new nextPosition
-            if(this.goalStop == 0) {
+            if(this.goalStop === 0) {
                 this.nextPosition = goalTwoPosition;
-            }else if (this.goalStop == 1) {
+            }else if (this.goalStop === 1) {
                 this.nextPosition = goalThreePosition;
-            }else if (this.goalStop == 2) {
+            }else if (this.goalStop === 2) {
                 this.nextPosition = goalFourPosition;
-            }else if (this.goalStop == 3) {
+            }else if (this.goalStop === 3) {
                 this.nextPosition = goalOnePosition;
             }
 
             //increment goal stop
             this.goalStop++;
-            this.goalStop %= 4;
+            if(this.goalStop > 3) {
+                this.goalStop -= 4;
+            }
 
         }
 
