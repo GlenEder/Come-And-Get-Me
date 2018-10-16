@@ -1,6 +1,6 @@
 let canvasWidth = 600;
 let canvasHeight = 500;
-
+let gameOver = false;
 
 let player = new Player();
 let score = 0;
@@ -21,11 +21,17 @@ redEnemy = new Enemy(100, 100, "red", 90);
 greenEnemy = new Enemy(goalThreePosition.x + 10, goalThreePosition.y + 10, "green", 60);
 blueEnemy = new Enemy(canvasWidth - 40, canvasHeight - 60, "blue", 30);
 
+//game over timer
+let gameOverTimer = new Counter();
+let gameOverBlinkRate = 30;
+let isBlink = true;
+
 
 function setup() {
     createCanvas(canvasWidth, canvasHeight);
     frameRate(60);
     background(51);
+    textFont('Courier New');
 }
 
 function draw() {
@@ -33,28 +39,65 @@ function draw() {
     fill(51);
     rect(0, 0, canvasWidth, canvasHeight);
 
-    //update logic
-    player.update();
-    redEnemy.update();
-    greenEnemy.update();
-    blueEnemy.update();
-    redGoal.update(redEnemy);
-    greenGoal.update(greenEnemy);
-    blueGoal.update(blueEnemy);
+    if(!gameOver){
+        //update logic
+        player.update();
+        redEnemy.update();
+        greenEnemy.update();
+        blueEnemy.update();
+        redGoal.update(redEnemy);
+        greenGoal.update(greenEnemy);
+        blueGoal.update(blueEnemy);
+    }
 
+        //update graphics
+        //always going to update graphics
+        stroke(255);
+        strokeWeight(0);
+        textSize(24);
+        fill(255);
+        text("Score: " + score, 20, 40);
+        strokeWeight(1);
+        redGoal.render();
+        blueGoal.render();
+        greenGoal.render();
+        player.render();
+        redEnemy.render();
+        greenEnemy.render();
+        blueEnemy.render();
 
-    //update graphics
-    stroke(255);
-    textSize(24);
-    fill(255);
-    text("Score: " + score, 20, 40);
-    redGoal.render();
-    blueGoal.render();
-    greenGoal.render();
-    player.render();
-    redEnemy.render();
-    greenEnemy.render();
-    blueEnemy.render();
+        //draw game over text
+        if(gameOver) {
+            gameOverTimer.update();
+            if(gameOverTimer.isCountAt(gameOverBlinkRate)) {
+                gameOverTimer.resetCount();
+                isBlink = !isBlink;
+            }
+            if(isBlink) {
+                textSize(60);
+                fill(255);
+                stroke(0);
+                strokeWeight(4);
+                text("Game Over", canvasWidth / 2 - (60 * 2.5), canvasHeight / 2 + 20);
+            } 
+
+            if(keyIsDown(ENTER)) {
+                gameOver = !gameOver;
+                resetGame();
+            }
+        }
+    
+
+}
+
+function resetGame() {
+    score = 0;
+    redEnemy.x = 100;
+    redEnemy.y = 100;
+    greenEnemy.x = goalThreePosition.x + 10;
+    greenEnemy.y = goalThreePosition.y + 10;
+    blueEnemy.x = canvasWidth - 40;
+    blueEnemy.y = canvasHeight - 60;
 
 }
 
@@ -78,7 +121,7 @@ function Enemy(x, y, color, adjustTime) {
     this.adjustTimer = adjustTime;
 
 
-    this.update = function(goal) {
+    this.update = function() {
     
         //adjust for player after set ammount of time
         if(this.counter.isCountAt(this.adjustTimer)) {
@@ -137,6 +180,13 @@ function Enemy(x, y, color, adjustTime) {
         }
 
 
+        //check if collides with player
+        if(player.collidesWith(new Position(this.x, this.y), this.radius)) {
+            //game over
+            gameOver = true;
+        }
+
+
     }
 
     this.render = function() {
@@ -191,6 +241,39 @@ function Player() {
         fill(255);
         ellipse(this.x, this.y, this.radius);
     }
+
+    this.collidesWith = function(position, radius) {
+        //console.log("Player: " + this.x + " " + this.y + "\nEnemy: " + position.x + " " + position.y);
+
+        let leftSide = this.x - this.radius;
+        let rightSide = this.x + this.radius;
+        let top = this.y - this.radius;
+        let bottom = this.y + this.radius;
+
+        let objectLeftSide = position.x - radius;
+        let objectRigthSide = position.x + radius;
+        let objectTop = position.y - radius;
+        let objectBottom = position.y + radius;
+
+        //console.log("Player: left-%d, right-%d, top-%d, bottom-%d \nEnemy: left-%d, right-%d, top-%d, bottom-%d", leftSide, rightSide, top, bottom, objectLeftSide, objectRigthSide, objectTop, objectBottom);
+
+        //check left side
+        if(objectRigthSide > leftSide) {
+            //check right side
+            if(objectLeftSide < rightSide) {
+                //check top
+                if(objectBottom > top) {
+                    //check bottom
+                    if(objectTop < bottom) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+
 }
 
 /*
@@ -246,6 +329,7 @@ function Goal(position, positionToGoTo, goalStop, size, color) {
             this.y--;
         }
         
+        //check for enemy inside goal
         if(this.isInsideGoal(enemy.x, enemy.y, enemy.radius)) {
             if(this.enemyHasEntered === false) {
                 score++;
